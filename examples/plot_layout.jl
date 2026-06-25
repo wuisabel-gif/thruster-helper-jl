@@ -1,7 +1,7 @@
 # plot_layout.jl — graphical force-vector plot (requires Plots).
 #   julia --project=. -e 'using Pkg; Pkg.add("Plots")'   # one-time
 #   julia --project=. examples/plot_layout.jl
-using ThrusterLab
+using ThrusterHelper
 using Plots                                   # triggers the plotting extension
 
 vehicle = bluerov_vehicle()

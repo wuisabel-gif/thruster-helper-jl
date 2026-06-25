@@ -1,6 +1,6 @@
 # underactuated.jl — the 4-thruster quad controls surge/sway/yaw only.
 # Asking for heave leaves a large residual.
-using ThrusterLab
+using ThrusterHelper
 
 vehicle = quad_vehicle()
 report(diagnostics(vehicle))

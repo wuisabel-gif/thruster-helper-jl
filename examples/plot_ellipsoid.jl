@@ -1,7 +1,7 @@
 # plot_ellipsoid.jl — the 3-D manipulability ellipsoid (requires Plots).
 #   julia --project=. -e 'using Pkg; Pkg.add("Plots")'   # one-time
 #   julia --project=. examples/plot_ellipsoid.jl
-using ThrusterLab
+using ThrusterHelper
 using Plots
 
 vehicle = bluerov_vehicle()

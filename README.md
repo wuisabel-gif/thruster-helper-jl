@@ -1,4 +1,6 @@
-# ThrusterLab.jl
+# Thruster Helper
+
+*Julia package: `ThrusterHelper.jl`*
 
 A small, dependency-light **AUV thruster-allocation simulator** in Julia. Use it
 to test how an underwater robot turns a desired 6-DOF motion command into
@@ -22,7 +24,7 @@ the thruster geometry is wrong. A vehicle may lose an entire degree of freedom
 after one thruster fails. A layout might look symmetric but actually wastes
 power because the allocation is poorly conditioned.
 
-ThrusterLab.jl started as an excuse to learn Julia while exploring these
+Thruster Helper started as an excuse to learn Julia while exploring these
 problems. The project is intentionally small. It focuses on one task: given a
 desired force and torque on an underwater vehicle, determine what each thruster
 should do. Around that core idea are tools for understanding the vehicle
@@ -45,7 +47,7 @@ like a good middle ground:
 - Excellent scientific-computing ecosystem
 - Easy to prototype algorithms before rewriting them in C++ if necessary
 
-Most of ThrusterLab is simply linear algebra — exactly the kind of work Julia
+Most of Thruster Helper is simply linear algebra — exactly the kind of work Julia
 was designed for.
 
 ---
@@ -71,7 +73,7 @@ but the vehicle only has individual thrusters:
 f = [f1, f2, …, fN]
 ```
 
-ThrusterLab builds the **allocation matrix** `B` so that
+Thruster Helper builds the **allocation matrix** `B` so that
 
 ```text
 τ = B f
@@ -87,7 +89,7 @@ f = allocate(B, τ; method = :minimum_norm)   # f = pinv(B) τ
                  | :qp                        # best wrench within ±limits
 ```
 
-so ThrusterLab is a small **framework for comparing allocation methods**, not a
+so Thruster Helper is a small **framework for comparing allocation methods**, not a
 single `pinv` wrapper.
 
 ### Core concept
@@ -129,16 +131,16 @@ julia --project=. -e 'using Pkg; Pkg.test()'          # run the test suite
 julia --project=. examples/forward.jl                 # run an example
 ```
 
-The core has **no third-party dependencies** (only the `LinearAlgebra` and
-`Printf` standard libraries). Graphical plotting is optional and only pulls in
-`Plots` if you ask for it (see [Plotting](#plotting)).
+The core has **no third-party dependencies** (only the `LinearAlgebra`, `Printf`
+and `Random` standard libraries). Graphical plotting is optional and only pulls
+in `Plots` if you ask for it (see [Plotting](#plotting)).
 
 ---
 
 ## Quick start
 
 ```julia
-using ThrusterLab
+using ThrusterHelper
 
 # A built-in 8-thruster vehicle (BlueROV2 Heavy / RoboSub style).
 vehicle = bluerov_vehicle()
@@ -221,7 +223,7 @@ failure — cannot meet the command. See `examples/solver_comparison.jl`.
 > **Why not just use `pinv`?** `pinv(B) τ` is the right answer to a narrower
 > question — least-‖f‖ with *no other constraints*. It silently ignores
 > saturation limits, electrical power, failed thrusters and per-actuator
-> weighting. ThrusterLab exists to handle exactly those: `:qp` respects limits,
+> weighting. Thruster Helper exists to handle exactly those: `:qp` respects limits,
 > `:minimum_power` targets draw, `:weighted` steers around weak actuators,
 > `apply_failures` models dead ones, and `reachable` tells you when *no* command
 > suffices. `:minimum_norm` is still there for when `pinv` really is what you want.
@@ -257,7 +259,7 @@ Design diagnostics  (6 DOF × 8 actuators)
 ```
 
 The LinearAlgebra primitives the analysis is built on (`rank`, `cond`, `svd`,
-`svdvals`, `nullspace`, `eigen`, `pinv`) are re-exported, so `using ThrusterLab`
+`svdvals`, `nullspace`, `eigen`, `pinv`) are re-exported, so `using ThrusterHelper`
 is enough to reach for them directly on `B`.
 
 ---
@@ -317,8 +319,8 @@ Plotting is an optional [package extension](https://pkgdocs.julialang.org/v1/cre
 The core never loads `Plots`; it activates only when you do:
 
 ```julia
-using ThrusterLab
-using Plots                      # triggers ThrusterLabPlotsExt
+using ThrusterHelper
+using Plots                      # triggers ThrusterHelperPlotsExt
 
 vehicle = bluerov_vehicle()
 r = allocate(vehicle, [1, 0, 0, 0, 0, 0.5]; method = :qp)
@@ -360,9 +362,9 @@ The source is organised by the **algorithm pipeline**, so it is obvious where
 each part lives:
 
 ```text
-thrusterlab-jl/
+thruster-helper-jl/
 ├── src/
-│   ├── ThrusterLab.jl        # module, includes, exports
+│   ├── ThrusterHelper.jl        # module, includes, exports
 │   ├── types.jl             # AbstractActuator, Thruster, ReactionWheel, Vehicle, results
 │   ├── geometry.jl          # skew, force/torque contributions
 │   ├── allocation_matrix.jl # build B, forward map, command bounds
@@ -377,7 +379,7 @@ thrusterlab-jl/
 │       ├── bluerov.jl       # bluerov_heavy / bluerov_vehicle
 │       └── simple_quad.jl   # simple_quad / quad_vehicle
 ├── ext/
-│   └── ThrusterLabPlotsExt.jl   # Plots extension
+│   └── ThrusterHelperPlotsExt.jl   # Plots extension
 ├── examples/                # ~15 tiny scripts
 ├── test/runtests.jl
 ├── README.md

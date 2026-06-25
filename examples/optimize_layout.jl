@@ -1,7 +1,7 @@
 # optimize_layout.jl — from *analyse my AUV* to *design my AUV*.
 # Start from a cramped, poorly-conditioned layout and let the optimiser re-aim
 # the thrusters to minimise the condition number (then maximise manipulability).
-using ThrusterLab
+using ThrusterHelper
 
 # Short arms → weak torque authority → high condition number.
 vehicle = bluerov_vehicle(; arm=0.1)

@@ -5,7 +5,7 @@
 # The force rows of B have magnitude ~1, but the torque rows scale with the
 # lever arm. Shrink the arm and the torque DOFs get weak relative to the force
 # DOFs → κ(B) blows up. Sweep `arm` and watch the conditioning.
-using ThrusterLab
+using ThrusterHelper
 using Printf
 
 @printf("%-10s %8s %12s %14s\n", "arm [m]", "rank", "cond κ", "manipulability")

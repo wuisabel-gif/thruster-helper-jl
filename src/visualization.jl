@@ -1,6 +1,6 @@
 # visualization.jl
 # Text / ASCII reporting (dependency-free). Graphical force-vector plots live in
-# the optional Plots extension (ext/ThrusterLabPlotsExt.jl), exposed as
+# the optional Plots extension (ext/ThrusterHelperPlotsExt.jl), exposed as
 # `plot_thrusters` / `plot_vehicle`.
 
 """

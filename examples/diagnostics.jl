@@ -1,5 +1,5 @@
 # diagnostics.jl — the full SVD-based design report for a vehicle.
-using ThrusterLab
+using ThrusterHelper
 
 vehicle = bluerov_vehicle()
 describe(vehicle)

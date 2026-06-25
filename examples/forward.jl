@@ -1,5 +1,5 @@
 # forward.jl — pure surge (move straight ahead).
-using ThrusterLab
+using ThrusterHelper
 
 vehicle = bluerov_vehicle()
 τ = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]      # Fx only

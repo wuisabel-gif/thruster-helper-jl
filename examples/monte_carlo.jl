@@ -1,7 +1,7 @@
 # monte_carlo.jl — robustness to manufacturing error.
 # Perturb every thruster's pointing direction by ±misalignment and resample the
 # design thousands of times: how often is a DOF lost? what's the spread of κ?
-using ThrusterLab
+using ThrusterHelper
 
 vehicle = bluerov_vehicle()
 

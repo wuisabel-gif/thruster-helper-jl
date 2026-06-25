@@ -1,11 +1,11 @@
 """
-    ThrusterLab
+    ThrusterHelper
 
 An experimental platform for **thruster / actuator allocation and control-
 authority analysis**.
 
 A 6-DOF controller asks for a wrench `τ = [Fx, Fy, Fz, τx, τy, τz]`, but a
-vehicle only has individual actuators `f = [f₁, …, fₙ]`. ThrusterLab builds the
+vehicle only has individual actuators `f = [f₁, …, fₙ]`. ThrusterHelper builds the
 allocation matrix `B` (so `τ = B f`), solves for `f` with a choice of algorithms
 (`:minimum_norm`, `:weighted`, `:minimum_power`, `:qp`), and analyses the design
 itself — rank, conditioning, redundancy, control authority, failure modes and
@@ -16,7 +16,7 @@ hierarchy ([`Thruster`](@ref), [`ReactionWheel`](@ref), …), so AUVs, spacecraf
 and omni-robots all flow through the same pipeline.
 
 ```julia
-using ThrusterLab
+using ThrusterHelper
 vehicle = bluerov_vehicle()
 τ = [1.0, 0, 0, 0, 0, 0.5]                 # forward + yaw
 result = allocate(vehicle, τ; method=:qp)  # respects thruster limits
@@ -33,7 +33,7 @@ Graphical plots are available after `using Plots` (`plot_thrusters`,
     diagnostics.jl  visualization.jl   — analysis, reporting
     layouts/                           — ready-made vehicles
 """
-module ThrusterLab
+module ThrusterHelper
 
 using LinearAlgebra
 using Printf
@@ -91,10 +91,10 @@ export describe, report, bar
 export bluerov_heavy, bluerov_vehicle, simple_quad, quad_vehicle
 
 # Re-export the LinearAlgebra primitives the docs encourage reaching for, so
-# `using ThrusterLab` is enough to call them on an allocation matrix.
+# `using ThrusterHelper` is enough to call them on an allocation matrix.
 export rank, cond, svd, svdvals, nullspace, eigen, pinv
 
-# Defined by the Plots extension (ThrusterLabPlotsExt); stubs give a helpful
+# Defined by the Plots extension (ThrusterHelperPlotsExt); stubs give a helpful
 # error if called before `using Plots`.
 function plot_thrusters end
 function plot_vehicle end

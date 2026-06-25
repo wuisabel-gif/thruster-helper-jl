@@ -1,7 +1,7 @@
 # solver_comparison.jl — run every allocation method on one command and compare.
 # This is the "framework for comparing allocation algorithms" view of the
 # project in a single screen.
-using ThrusterLab
+using ThrusterHelper
 using Printf
 
 thr = bluerov_heavy()

@@ -1,4 +1,4 @@
-name = "ThrusterLab"
+name = "ThrusterHelper"
 uuid = "b3e1a4c2-6f7d-4a9e-8c1b-2d5f7a90e3c4"
 authors = ["Isabell Wu <isabellwu@users.noreply.github.com>"]
 version = "0.3.0"
@@ -12,7 +12,7 @@ Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 
 [extensions]
-ThrusterLabPlotsExt = "Plots"
+ThrusterHelperPlotsExt = "Plots"
 
 [compat]
 Plots = "1"

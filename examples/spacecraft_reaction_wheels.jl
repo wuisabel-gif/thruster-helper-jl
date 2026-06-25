@@ -2,7 +2,7 @@
 # A satellite with 4 reaction wheels in a pyramid produces pure torque; the same
 # allocation_matrix / allocate / diagnostics pipeline applies. Reaction wheels
 # only actuate the 3 torque DOFs, so force DOFs are (correctly) uncontrollable.
-using ThrusterLab
+using ThrusterHelper
 
 β = deg2rad(54.7)   # classic pyramid half-angle
 wheels = [

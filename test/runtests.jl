@@ -1,8 +1,8 @@
-using ThrusterLab
+using ThrusterHelper
 using LinearAlgebra
 using Test
 
-@testset "ThrusterLab.jl" begin
+@testset "ThrusterHelper.jl" begin
 
     # -- geometry / types ---------------------------------------------------
     @testset "Thruster construction + immutability" begin

@@ -1,5 +1,5 @@
 # yaw.jl — pure yaw (rotate about the vertical axis).
-using ThrusterLab
+using ThrusterHelper
 
 vehicle = bluerov_vehicle()
 τ = [0.0, 0.0, 0.0, 0.0, 0.0, 0.5]      # τz only

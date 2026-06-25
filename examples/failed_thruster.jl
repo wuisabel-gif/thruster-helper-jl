@@ -1,7 +1,7 @@
 # failed_thruster.jl — what does losing a thruster cost?
 # Compare the allocation and control authority for "forward + yaw" before and
 # after two thrusters die.
-using ThrusterLab
+using ThrusterHelper
 
 thr = bluerov_heavy()
 B   = allocation_matrix(thr)

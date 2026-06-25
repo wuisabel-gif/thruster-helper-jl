@@ -2,8 +2,8 @@
 # Implementation of the graphical force-vector visualisation.
 #
 # NOT included by the core module (which is dependency-free). Loaded by the
-# package extension ext/ThrusterLabPlotsExt.jl once the user runs `using Plots`,
-# and defines ThrusterLab.plot_thrusters / ThrusterLab.plot_vehicle.
+# package extension ext/ThrusterHelperPlotsExt.jl once the user runs `using Plots`,
+# and defines ThrusterHelper.plot_thrusters / ThrusterHelper.plot_vehicle.
 
 """
     plot_thrusters(actuators; commands=nothing, failed=Int[], view=:xy, kwargs...)
@@ -19,7 +19,7 @@ Plot the actuator layout and force vectors (requires `using Plots`).
 Only `Thruster`s are drawn (they have a position); other actuators are skipped.
 Returns the `Plots.Plot`.
 """
-function ThrusterLab.plot_thrusters(actuators::AbstractVector{<:AbstractActuator};
+function ThrusterHelper.plot_thrusters(actuators::AbstractVector{<:AbstractActuator};
                                     commands=nothing, failed=Int[],
                                     view::Symbol=:xy, arrowscale::Real=0.15, kwargs...)
     ax = view === :xy ? (1, 2, "x [m]", "y [m]") :
@@ -29,10 +29,10 @@ function ThrusterLab.plot_thrusters(actuators::AbstractVector{<:AbstractActuator
     ix, iy, xl, yl = ax
 
     n = length(actuators)
-    failmask = ThrusterLab.failed_indices(failed, n)
+    failmask = ThrusterHelper.failed_indices(failed, n)
 
     plt = Plots.plot(; xlabel=xl, ylabel=yl, aspect_ratio=:equal,
-                     legend=false, title="ThrusterLab — $(view) view", kwargs...)
+                     legend=false, title="Thruster Helper — $(view) view", kwargs...)
     Plots.scatter!(plt, [0.0], [0.0]; marker=:cross, markersize=8, color=:black)
 
     for (i, a) in enumerate(actuators)
@@ -58,8 +58,8 @@ end
 
 Plot a [`Vehicle`](@ref)'s actuators (forwards to [`plot_thrusters`](@ref)).
 """
-ThrusterLab.plot_vehicle(v::Vehicle; kwargs...) =
-    ThrusterLab.plot_thrusters(v.actuators; kwargs...)
+ThrusterHelper.plot_vehicle(v::Vehicle; kwargs...) =
+    ThrusterHelper.plot_thrusters(v.actuators; kwargs...)
 
 """
     plot_manipulability(vehicle; block=:force, kwargs...)
@@ -73,13 +73,13 @@ the design's weak spot (drawn as a red arrow).
 `block` selects the 3×3 sub-block to visualise: `:force` (rows Fx,Fy,Fz) or
 `:torque` (rows τx,τy,τz). Returns the `Plots.Plot`.
 """
-function ThrusterLab.plot_manipulability(v::Vehicle; block::Symbol=:force, kwargs...)
-    B = ThrusterLab.allocation_matrix(v)
+function ThrusterHelper.plot_manipulability(v::Vehicle; block::Symbol=:force, kwargs...)
+    B = ThrusterHelper.allocation_matrix(v)
     rows = block === :force ? (1:3) : block === :torque ? (4:6) :
            throw(ArgumentError("block must be :force or :torque"))
     labels = block === :force ? ("Fx", "Fy", "Fz") : ("τx", "τy", "τz")
     M = B[rows, :]
-    F = svd(M)                                    # svd re-exported by ThrusterLab
+    F = svd(M)                                    # svd re-exported by ThrusterHelper
     U, S = F.U, F.S
 
     # unit sphere → ellipsoid via U * diag(S)

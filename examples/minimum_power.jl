@@ -1,7 +1,7 @@
 # minimum_power.jl — minimum-power allocation vs plain minimum-norm.
 # Power ∝ |thrust|^1.5, so minimising Σ|f|^1.5 (IRLS) can beat the least-‖f‖₂
 # solution on total electrical draw.
-using ThrusterLab
+using ThrusterHelper
 using Printf
 
 thr = bluerov_heavy()

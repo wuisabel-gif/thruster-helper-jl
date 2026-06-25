@@ -1,5 +1,5 @@
 # rank_loss.jl — watch control authority collapse as thrusters fail one by one.
-using ThrusterLab
+using ThrusterHelper
 using Printf
 
 thr = bluerov_heavy()

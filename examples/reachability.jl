@@ -1,7 +1,7 @@
 # reachability.jl — can the vehicle even produce this wrench?
 # Allocation alone returns *some* command; reachable() respects the saturation
 # limits and tells you the closest achievable wrench when the answer is "no".
-using ThrusterLab
+using ThrusterHelper
 
 vehicle = bluerov_vehicle()      # thrusters limited to ±1 N
 

@@ -1,6 +1,6 @@
 # weighted_solver.jl — discourage one (weak / nearly-failed) thruster by giving
 # it a large weight. The solver routes effort to the others.
-using ThrusterLab
+using ThrusterHelper
 
 thr = bluerov_heavy()
 B   = allocation_matrix(thr)
