@@ -1,0 +1,25 @@
+name = "ThrusterLab"
+uuid = "b3e1a4c2-6f7d-4a9e-8c1b-2d5f7a90e3c4"
+authors = ["Isabell Wu <isabellwu@users.noreply.github.com>"]
+version = "0.3.0"
+
+[deps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[weakdeps]
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[extensions]
+ThrusterLabPlotsExt = "Plots"
+
+[compat]
+Plots = "1"
+julia = "1.6"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

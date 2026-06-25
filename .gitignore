@@ -1,0 +1,17 @@
+# Julia
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+/Manifest.toml
+/docs/build/
+/docs/site/
+
+# Plots / generated artifacts from examples
+/examples/*.png
+/examples/*.svg
+/examples/*.pdf
+
+# Editor / OS
+.DS_Store
+.vscode/
+*.swp

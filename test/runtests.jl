@@ -1,0 +1,254 @@
+using ThrusterLab
+using LinearAlgebra
+using Test
+
+@testset "ThrusterLab.jl" begin
+
+    # -- geometry / types ---------------------------------------------------
+    @testset "Thruster construction + immutability" begin
+        t = Thruster("a", [1.0, 0.0, 0.0], [0.0, 2.0, 0.0])
+        @test norm(t.direction) ≈ 1.0
+        @test t.direction ≈ [0.0, 1.0, 0.0]
+        @test t.max_thrust == 1.0
+        @test !ismutabletype(Thruster)                 # geometry is immutable
+        @test_throws ArgumentError Thruster("z", [0,0,0], [0,0,0])
+        @test_throws ArgumentError Thruster("z", [0,0], [1,0,0])
+        @test_throws ArgumentError Thruster(; name="z", position=[0,0,0],
+                                            direction=[1,0,0], max_thrust=-1)
+    end
+
+    @testset "skew == cross product" begin
+        v = [1.0, 2.0, 3.0]; w = [-4.0, 5.0, 6.0]
+        @test skew(v) * w ≈ cross(v, w)
+        @test skew(v) ≈ -skew(v)'                       # skew-symmetric
+    end
+
+    @testset "wrench column = [dir; pos×dir]" begin
+        t = Thruster("x", [0.0, 1.0, 0.0], [1.0, 0.0, 0.0])
+        @test column(t) ≈ [1.0, 0, 0, 0, 0, -1.0]       # (0,1,0)×(1,0,0)=(0,0,-1)
+        @test force_contribution(t) ≈ [1.0, 0, 0]
+        @test torque_contribution(t) ≈ [0, 0, -1.0]
+    end
+
+    @testset "ReactionWheel = pure torque" begin
+        w = ReactionWheel("rw-z", [0.0, 0.0, 2.0]; max_torque=3.0)
+        @test column(w) ≈ [0, 0, 0, 0, 0, 1.0]          # unit axis, no force
+        @test w.max_thrust == 3.0
+    end
+
+    # -- allocation matrix --------------------------------------------------
+    @testset "Allocation matrix shape + known BlueROV values" begin
+        thr = bluerov_heavy()
+        B = allocation_matrix(thr)
+        @test size(B) == (6, 8)
+        c = sqrt(2)/2
+        @test B[1:3, 1] ≈ [c, c, 0.0]                   # front-right-horiz force
+        @test B[1:3, 5] ≈ [0.0, 0.0, 1.0]               # front-right-vert force
+        @test rank(B) == 6
+        @test_throws ArgumentError allocation_matrix(Thruster[])
+    end
+
+    @testset "Vehicle wraps actuators" begin
+        v = bluerov_vehicle()
+        @test nactuators(v) == 8
+        @test allocation_matrix(v) == allocation_matrix(v.actuators)
+        @test v.mass == 11.0
+    end
+
+    # -- solvers ------------------------------------------------------------
+    @testset "Forward/inverse consistency, all solvers (full rank)" begin
+        thr = bluerov_heavy()
+        B = allocation_matrix(thr)
+        for τ in ([1.0,0,0,0,0,0], [0,0,0,0,0,0.5], [0.5,-0.3,0.2,0.0,0.0,0.1])
+            for m in (:minimum_norm, :pinv, :minimum_power)
+                r = allocate(B, τ; method=m)
+                @test r.achieved ≈ τ atol=1e-7
+            end
+            rq = allocate(thr, τ; method=:qp)           # default bounds = ±1
+            @test rq.achieved ≈ τ atol=1e-5
+        end
+    end
+
+    @testset ":minimum_norm == pinv solution" begin
+        thr = bluerov_heavy(); B = allocation_matrix(thr)
+        τ = [1.0,0,0,0,0,0.3]
+        @test allocate(B, τ; method=:minimum_norm).commands ≈ pinv(B)*τ atol=1e-9
+    end
+
+    @testset ":weighted discourages a thruster" begin
+        thr = bluerov_heavy(); B = allocation_matrix(thr)
+        τ = [1.0,0,0,0,0,0]
+        w = ones(8); w[1] = 100.0
+        rw = allocate(B, τ; method=:weighted, weights=w)
+        rn = allocate(B, τ; method=:minimum_norm)
+        @test abs(rw.commands[1]) < abs(rn.commands[1]) + 1e-9
+        @test rw.achieved ≈ τ atol=1e-7
+        @test_throws ArgumentError allocate(B, τ; method=:weighted)   # needs weights
+    end
+
+    @testset ":minimum_power spreads load vs min-norm" begin
+        thr = bluerov_heavy(); B = allocation_matrix(thr)
+        τ = [1.0,0,0,0,0,0.3]
+        rp = allocate(B, τ; method=:minimum_power, p=1.5)
+        @test rp.achieved ≈ τ atol=1e-6                 # still hits the command
+        @test total_power(rp.commands) <= total_power(allocate(B,τ).commands) + 1e-6
+    end
+
+    @testset ":qp respects bounds" begin
+        thr = bluerov_heavy(); B = allocation_matrix(thr)
+        τ = [3.0, 0, 0, 0, 0, 0]                        # too big for ±1 limits
+        rq = allocate(B, τ; method=:qp, bounds=1.0)
+        @test maximum(abs.(rq.commands)) <= 1.0 + 1e-6  # never exceeds the box
+        @test norm(rq.residual) > 0                     # can't fully achieve it
+        # within bounds, qp matches the unconstrained optimum
+        rqsmall = allocate(B, [0.2,0,0,0,0,0]; method=:qp, bounds=10.0)
+        @test rqsmall.achieved ≈ [0.2,0,0,0,0,0] atol=1e-5
+    end
+
+    @testset "unknown method errors" begin
+        @test_throws ArgumentError allocate(allocation_matrix(bluerov_heavy()),
+                                            zeros(6); method=:nope)
+    end
+
+    # -- constraints --------------------------------------------------------
+    @testset "Saturation + scaling" begin
+        f = [0.5, -1.5, 2.0, -0.2]
+        fs, sat = saturate(f, 1.0)
+        @test fs == [0.5, -1.0, 1.0, -0.2]
+        @test sat == [false, true, true, false]
+        fsc, factor = scale_to_limits(f, 1.0)
+        @test factor ≈ 0.5
+        @test maximum(abs.(fsc)) ≈ 1.0
+        @test fsc ≈ f .* factor                          # direction preserved
+    end
+
+    @testset "Failure zeros columns" begin
+        thr = bluerov_heavy(); B = allocation_matrix(thr)
+        Bf = apply_failures(B, [1, 5])
+        @test all(Bf[:, 1] .== 0) && all(Bf[:, 5] .== 0)
+        @test Bf[:, 2] == B[:, 2]
+        @test failed_indices([1,5], 8) == [1, 5]
+        @test failed_indices(Bool[1,0,0,0,1,0,0,0], 8) == [1, 5]
+        @test norm(allocate(Bf, [1.0,0,0,0,0,0]).residual) < 1e-6   # forward survives
+    end
+
+    @testset "Power model" begin
+        @test estimate_power([2.0]; p=1.5)[1] ≈ 2.0^1.5
+        @test estimate_power([0.0]; idle=3.0)[1] ≈ 3.0
+        @test all(estimate_power([-1.0, 1.0]) .≈ 1.0)
+        @test total_power([1.0, 1.0]) ≈ 2.0
+    end
+
+    # -- diagnostics --------------------------------------------------------
+    @testset "Diagnostics: full-rank BlueROV" begin
+        d = diagnostics(bluerov_heavy())
+        @test d.rank == 6
+        @test d.redundancy == 2                          # 8 thrusters − 6 DOF
+        @test all(d.controllable)
+        @test isfinite(d.condition_number)
+        @test d.manipulability > 0
+        @test length(d.singular_values) == 6
+    end
+
+    @testset "Diagnostics: under-actuated quad loses DOFs" begin
+        d = diagnostics(simple_quad())
+        @test d.rank == 3
+        @test d.controllable[1] && d.controllable[2] && d.controllable[6]  # surge/sway/yaw
+        @test !d.controllable[3] && !d.controllable[4] && !d.controllable[5]  # heave/roll/pitch
+        @test d.condition_number == Inf || !d.controllable[3]
+        # demanding heave is impossible
+        @test norm(allocate(simple_quad(), [0,0,1.0,0,0,0]).residual) > 0.1
+        info = controllable_dofs(simple_quad())
+        @test info.rank == 3 && info.labels[3] == "Fz"
+    end
+
+    @testset "dominant_dof labels a direction" begin
+        @test dominant_dof([0.1, 0.0, 0.9, 0.0, 0.0, 0.0]) == "Fz"
+        @test dominant_dof([0,0,0,0,0,1.0]) == "τz"
+    end
+
+    # -- analysis: reachability --------------------------------------------
+    @testset "reachable()" begin
+        v = bluerov_vehicle()                            # ±1 N thrusters
+        r1 = reachable(v, [1.0, 0, 0, 0, 0, 0])
+        @test r1.reachable
+        @test r1.max_error < 1e-3
+        @test isempty(r1.saturated)
+        r2 = reachable(v, [4.0, 0, 0, 0, 0, 0])          # beyond ~2.83 N limit
+        @test !r2.reachable
+        @test r2.max_error > 0.5
+        @test !isempty(r2.saturated)
+        @test occursin("UNREACHABLE", r2.reason)
+        @test all(abs.(r2.commands) .<= 1.0 + 1e-6)      # stays within limits
+    end
+
+    # -- analysis: method comparison ---------------------------------------
+    @testset "compare_methods()" begin
+        v = bluerov_vehicle()
+        c = compare_methods(v, [1.0, 0.3, 0, 0, 0, 0.4])
+        @test length(c.rows) == 4
+        @test all(haskey(r, :power) && haskey(r, :saturated) for r in c.rows)
+        qp = first(r for r in c.rows if r.method == :qp)
+        @test qp.residual < 1e-6
+        buf = IOBuffer(); report(c; io=buf)
+        @test occursin("method comparison", String(take!(buf)))
+    end
+
+    # -- analysis: failure criticality -------------------------------------
+    @testset "rank_failures()" begin
+        rows = rank_failures(bluerov_vehicle())
+        @test length(rows) == 8
+        @test all(r.rank_before == 6 for r in rows)
+        @test all(r.rank_after == 6 for r in rows)       # over-actuated: 1 loss ok
+        @test all(isempty(r.lost_dofs) for r in rows)
+        # the quad has redundancy 1: a single loss is survivable, but some
+        # *pair* of failures costs a DOF.
+        qsingle = rank_failures(quad_vehicle())
+        @test all(r.rank_after == 3 for r in qsingle)    # redundancy absorbs one loss
+        qpairs = rank_failures(quad_vehicle(); pairs=true)
+        @test any(r.rank_after < r.rank_before for r in qpairs)
+        @test any(!isempty(r.lost_dofs) for r in qpairs)
+    end
+
+    # -- analysis: Monte-Carlo robustness ----------------------------------
+    @testset "monte_carlo()" begin
+        v = bluerov_vehicle()
+        m = monte_carlo(v; misalignment_deg=2.0, samples=500, seed=42)
+        @test m.samples == 500
+        @test length(m.dof_loss_prob) == 6
+        @test 0.0 <= m.full_rank_prob <= 1.0
+        @test m.full_rank_prob > 0.99                    # small error → stays actuated
+        @test m.cond_mean > 0
+        # deterministic given the seed
+        m2 = monte_carlo(v; misalignment_deg=2.0, samples=500, seed=42)
+        @test m.cond_mean == m2.cond_mean
+    end
+
+    # -- design optimisation -----------------------------------------------
+    @testset "optimize_layout()" begin
+        v = bluerov_vehicle(; arm=0.1)                   # cramped → poorly conditioned
+        before = diagnostics(v).condition_number
+        res = optimize_layout(v; objective=:condition_number, restarts=2, iterations=1500)
+        @test res.after.condition_number <= before + 1e-6      # no worse
+        @test res.after.condition_number < before              # actually improves
+        @test res.after.rank == 6                              # stays fully actuated
+        @test res.vehicle isa Vehicle
+        # manipulability objective should raise manipulability
+        resm = optimize_layout(v; objective=:manipulability, restarts=2, iterations=1500)
+        @test resm.after.manipulability >= diagnostics(v).manipulability - 1e-9
+    end
+
+    # -- reporting ----------------------------------------------------------
+    @testset "report() runs" begin
+        thr = bluerov_heavy()
+        r = allocate(thr, [1.0,0,0,0,0,0.5]; method=:qp)
+        buf = IOBuffer()
+        report(r; actuators=thr, io=buf)
+        report(diagnostics(thr); io=buf)
+        describe(bluerov_vehicle(); io=buf)
+        s = String(take!(buf))
+        @test occursin("Actuator commands", s)
+        @test occursin("condition", s)
+        @test occursin("most-loaded", s)
+    end
+end
