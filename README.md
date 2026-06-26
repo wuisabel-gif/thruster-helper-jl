@@ -123,7 +123,11 @@ they are exactly what this project tries to answer:
 
 ## Install / run
 
-Requires Julia ≥ 1.6. From the package directory:
+Requires Julia ≥ 1.9 (the optional Plots support uses package extensions, which
+need 1.9+).
+
+Once registered (see [Publishing](#publishing)) it installs with
+`Pkg.add("ThrusterHelper")`. From a local clone:
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'   # one-time
@@ -429,6 +433,26 @@ Still on the list:
 - Symbolic Jacobian / sensitivity (`Symbolics.jl`)
 - Export `B` / `pinv(B)` to C++ / ROS 2
 - Interactive GUI
+
+## Publishing
+
+This package is registration-ready for Julia's **General registry** (name
+`ThrusterHelper` is free, `[compat]` and license are set, tests pass, CI /
+TagBot / CompatHelper workflows are in `.github/workflows/`). To register:
+
+1. **Make the repository public** — the General registry only accepts public
+   source. (Conventionally the repo is also renamed to `ThrusterHelper.jl`.)
+2. Comment **`@JuliaRegistrator register`** on the latest commit. The bot opens a
+   PR to [General](https://github.com/JuliaRegistries/General); new packages
+   auto-merge after a ~3-day waiting period.
+3. After merge, `TagBot` tags the release and users can `Pkg.add("ThrusterHelper")`.
+
+Until then, it installs straight from Git:
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/wuisabel-gif/thruster-helper-jl")
+```
 
 ## License
 
