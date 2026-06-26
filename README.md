@@ -2,6 +2,12 @@
 
 *Julia package: `ThrusterHelper.jl`*
 
+[![CI](https://github.com/wuisabel-gif/thruster-helper-jl/actions/workflows/CI.yml/badge.svg)](https://github.com/wuisabel-gif/thruster-helper-jl/actions/workflows/CI.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Julia](https://img.shields.io/badge/Julia-%E2%89%A5%201.9-9558B2?logo=julia&logoColor=white)](https://julialang.org)
+[![version](https://juliahub.com/docs/General/ThrusterHelper/stable/version.svg)](https://juliahub.com/ui/Packages/General/ThrusterHelper)
+[![code: dependency-light](https://img.shields.io/badge/deps-stdlib%20only-success.svg)](Project.toml)
+
 A small, dependency-light **AUV thruster-allocation simulator** in Julia. Use it
 to test how an underwater robot turns a desired 6-DOF motion command into
 individual thruster pushes — and to debug thruster geometry, saturation, and
